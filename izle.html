@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Fen Özet Videosu</title>
+  <link rel="stylesheet" href="stil.css">
+</head>
+<body>
+  <main class="sayfa" style="max-width: 900px">
+    <header>
+      <h1 id="baslik">Fen Özet Videosu</h1>
+      <p id="altbaslik"></p>
+    </header>
+    <div class="oynatici" id="oynatici"></div>
+    <p id="aciklama"></p>
+  </main>
+
+  <script src="videolar.js"></script>
+  <script src="ortak.js"></script>
+  <script>
+    var id = new URLSearchParams(location.search).get("v");
+    var v = (window.VIDEOLAR || []).filter(function (x) { return x.id === id; })[0];
+    var kutu = document.getElementById("oynatici");
+
+    function mesaj(m) {
+      var d = document.createElement("div");
+      d.className = "yakinda";
+      d.textContent = m;
+      kutu.appendChild(d);
+    }
+
+    if (!v) {
+      document.getElementById("baslik").textContent = "Video bulunamadı";
+      mesaj("Bu bağlantı geçersiz. Lütfen öğretmeninizden bağlantıyı tekrar isteyin.");
+    } else {
+      document.title = v.baslik + " – Fen Özet Videosu";
+      document.getElementById("baslik").textContent = v.baslik;
+      document.getElementById("altbaslik").textContent =
+        [v.sinif, v.unite !== v.baslik ? v.unite : "", v.sure].filter(Boolean).join(" · ");
+      document.getElementById("aciklama").textContent = v.aciklama || "";
+
+      var k = videoKaynagi(v.kaynak);
+      if (!k) {
+        mesaj("Video yakında eklenecek.");
+      } else if (k.tur === "iframe") {
+        var f = document.createElement("iframe");
+        f.src = k.adres;
+        f.title = v.baslik;
+        f.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen";
+        f.allowFullscreen = true;
+        f.referrerPolicy = "strict-origin-when-cross-origin";
+        kutu.appendChild(f);
+      } else {
+        var vid = document.createElement("video");
+        vid.src = k.adres;
+        vid.controls = true;
+        vid.preload = "metadata";
+        vid.setAttribute("playsinline", "");
+        vid.setAttribute("controlsList", "nodownload");
+        kutu.appendChild(vid);
+      }
+    }
+  </script>
+</body>
+</html>

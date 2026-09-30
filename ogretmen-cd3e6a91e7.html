@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Fen Özet Videoları</title>
+  <link rel="stylesheet" href="stil.css">
+</head>
+<body>
+  <main class="sayfa">
+    <header>
+      <h1>Fen Özet Videoları</h1>
+      <p>Öğretmen sayfası</p>
+    </header>
+
+    <div class="kart bilgi">
+      Her video için <strong>Bağlantıyı kopyala</strong> düğmesine basıp bağlantıyı öğrencinizle paylaşabilirsiniz.
+      Öğrenci yalnızca o videoyu görür; bu sayfayı ve video listesini görmez.
+      <strong>Lütfen bu sayfanın adresini öğrencilerle paylaşmayın.</strong>
+    </div>
+
+    <div class="arac">
+      <input id="ara" type="search" placeholder="Video, ünite veya sınıf ara…" aria-label="Ara">
+      <button id="tumunuKopyala" class="btn ikincil" type="button">Tüm bağlantıları kopyala</button>
+    </div>
+
+    <div class="kart">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Video</th><th>Sınıf</th><th>Süre</th><th></th></tr>
+        </thead>
+        <tbody id="liste"></tbody>
+      </table>
+      <div id="bos" class="bos" hidden>Aramanızla eşleşen video yok.</div>
+    </div>
+  </main>
+
+  <div id="bildirim" class="bildirim" role="status" aria-live="polite"></div>
+
+  <script src="videolar.js"></script>
+  <script src="ortak.js"></script>
+  <script>
+    var videolar = window.VIDEOLAR || [];
+    var liste = document.getElementById("liste");
+
+    function yazi(s) {
+      var d = document.createElement("div");
+      d.textContent = s == null ? "" : String(s);
+      return d.innerHTML;
+    }
+
+    videolar.forEach(function (v, i) {
+      var hazir = !!(v.kaynak || "").trim();
+      var tr = document.createElement("tr");
+      tr.dataset.ara = [v.baslik, v.unite, v.sinif, v.aciklama].join(" ").toLocaleLowerCase("tr");
+      tr.innerHTML =
+        '<td class="no">' + (i + 1) + '</td>' +
+        '<td><strong>' + yazi(v.baslik) + '</strong>' +
+          (v.unite && v.unite !== v.baslik ? '<span class="alt">' + yazi(v.unite) + '</span>' : '') +
+          (hazir ? '' : '<span class="alt">Video henüz eklenmedi</span>') + '</td>' +
+        '<td>' + (v.sinif ? '<span class="etiket">' + yazi(v.sinif) + '</span>' : '') + '</td>' +
+        '<td>' + yazi(v.sure || "—") + '</td>' +
+        '<td><div class="islem">' +
+          '<button class="btn" type="button" data-kopyala="' + yazi(v.id) + '"' + (hazir ? '' : ' disabled') + '>Bağlantıyı kopyala</button>' +
+          '<a class="btn ikincil" target="_blank" rel="noopener" href="' + yazi(ogrenciBaglantisi(v.id)) + '">Aç</a>' +
+        '</div></td>';
+      liste.appendChild(tr);
+    });
+
+    document.getElementById("ara").addEventListener("input", function (e) {
+      var q = e.target.value.trim().toLocaleLowerCase("tr");
+      var gorunen = 0;
+      Array.prototype.forEach.call(liste.rows, function (tr) {
+        var eslesti = !q || tr.dataset.ara.indexOf(q) !== -1;
+        tr.hidden = !eslesti;
+        if (eslesti) gorunen++;
+      });
+      document.getElementById("bos").hidden = gorunen > 0;
+    });
+
+    function bildir(mesaj) {
+      var b = document.getElementById("bildirim");
+      b.textContent = mesaj;
+      b.classList.add("gorunur");
+      clearTimeout(bildir.t);
+      bildir.t = setTimeout(function () { b.classList.remove("gorunur"); }, 2000);
+    }
+
+    function kopyala(metin, mesaj) {
+      function eskiYol() {
+        var t = document.createElement("textarea");
+        t.value = metin;
+        t.style.position = "fixed";
+        t.style.opacity = "0";
+        document.body.appendChild(t);
+        t.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(t);
+        ok ? bildir(mesaj) : window.prompt("Bağlantıyı kopyalayın:", metin);
+      }
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(metin).then(function () { bildir(mesaj); }, eskiYol);
+      } else {
+        eskiYol();
+      }
+    }
+
+    liste.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-kopyala]");
+      if (btn) kopyala(ogrenciBaglantisi(btn.dataset.kopyala), "Bağlantı kopyalandı");
+    });
+
+    document.getElementById("tumunuKopyala").addEventListener("click", function () {
+      var satirlar = videolar
+        .filter(function (v) { return (v.kaynak || "").trim(); })
+        .map(function (v) { return v.baslik + ": " + ogrenciBaglantisi(v.id); });
+      if (!satirlar.length) return bildir("Henüz eklenmiş video yok");
+      kopyala(satirlar.join("\n"), satirlar.length + " bağlantı kopyalandı");
+    });
+  </script>
+</body>
+</html>
